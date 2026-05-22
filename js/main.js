@@ -15,7 +15,7 @@ const FLEET = [
     id: "toyota-rav4",
     name: "Toyota RAV4",
     meta: "5 seats · Automatic · SUV",
-    image: "images/rav4.jpg",
+    image: "images/Rav4.jpg",
     details: ["5 passengers", "Automatic · AWD available", "Petrol", "Extra luggage space"],
   },
   {
