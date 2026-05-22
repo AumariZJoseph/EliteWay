@@ -258,9 +258,9 @@ h3 { font-size: 1.35rem; }
 .hero-slide {
   position: absolute;
   inset: 0;
-  background-image: var(--slide-img);
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
   opacity: 0;
   transition: opacity 1.2s ease-in-out;
 }

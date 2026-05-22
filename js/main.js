@@ -128,7 +128,23 @@ document.addEventListener("keydown", (e) => {
 
 // --- Hero background carousel ---
 let heroIndex = 0;
-const heroSlides = document.querySelectorAll(".hero-slide");
+let heroSlides = [];
+
+function getHeroSlideUrl(slide) {
+  const bg = slide.style.backgroundImage || getComputedStyle(slide).backgroundImage;
+  const match = bg && bg.match(/url\(["']?([^"')]+)["']?\)/);
+  return match ? match[1] : null;
+}
+
+function preloadHeroImages(slides) {
+  slides.forEach((slide) => {
+    const url = getHeroSlideUrl(slide);
+    if (url) {
+      const img = new Image();
+      img.src = url;
+    }
+  });
+}
 
 function setHeroSlide(index) {
   if (!heroSlides.length) return;
@@ -136,8 +152,16 @@ function setHeroSlide(index) {
   heroSlides.forEach((s, i) => s.classList.toggle("active", i === heroIndex));
 }
 
-if (heroSlides.length > 1) {
-  setInterval(() => setHeroSlide(heroIndex + 1), 6000);
+function initHeroCarousel() {
+  heroSlides = [...document.querySelectorAll(".hero-slide")];
+  if (!heroSlides.length) return;
+
+  preloadHeroImages(heroSlides);
+  setHeroSlide(0);
+
+  if (heroSlides.length > 1) {
+    setInterval(() => setHeroSlide(heroIndex + 1), 6000);
+  }
 }
 
 // --- Premium gallery ---
@@ -306,4 +330,7 @@ newRequestBtn?.addEventListener("click", () => {
 });
 
 // Init
-document.addEventListener("DOMContentLoaded", renderFleet);
+document.addEventListener("DOMContentLoaded", () => {
+  initHeroCarousel();
+  renderFleet();
+});
