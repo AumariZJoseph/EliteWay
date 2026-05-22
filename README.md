@@ -24,7 +24,8 @@ npx serve .
 - Responsive navbar with mobile menu
 - Hero with gradient overlay and CTAs
 - Premium image rotator (5s auto-advance)
-- Fleet cards → lightbox with specifications only
+- Fleet cards → optimized thumbnails (`images/fleet-thumb/`), full-size in lightbox only
+- Regenerate thumbnails: `powershell -File scripts/resize-fleet.ps1`
 - Inquiry form with service-dependent return date; thank-you state on submit
 - Placeholder images via Unsplash (requires network)
 

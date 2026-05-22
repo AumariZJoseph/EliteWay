@@ -8,51 +8,88 @@ const FLEET = [
     id: "toyota-corolla",
     name: "Toyota Corolla",
     meta: "5 seats · Automatic · Petrol",
-    image: "images/corolla.jpg",
+    image: "images/fleet-thumb/corolla.jpg",
+    imageFull: "images/corolla.jpg",
     details: ["5 passengers", "Automatic transmission", "Petrol · Full-to-full", "Bluetooth · A/C"],
   },
   {
     id: "toyota-rav4",
     name: "Toyota RAV4",
     meta: "5 seats · Automatic · SUV",
-    image: "images/Rav4.jpg",
+    image: "images/fleet-thumb/Rav4.jpg",
+    imageFull: "images/Rav4.jpg",
     details: ["5 passengers", "Automatic · AWD available", "Petrol", "Extra luggage space"],
   },
   {
     id: "mercedes-e-class",
     name: "Mercedes-Benz E-Class",
     meta: "4 seats · Automatic · Executive",
-    image: "images/benz.jpg",
+    image: "images/fleet-thumb/benz.jpg",
+    imageFull: "images/benz.jpg",
     details: ["4 passengers", "Leather interior", "Executive chauffeur ready", "Premium A/C"],
   },
   {
     id: "bmw-x5",
     name: "BMW X5",
     meta: "5 seats · Automatic · Luxury SUV",
-    image: "images/x5.jpg",
+    image: "images/fleet-thumb/x5.jpg",
+    imageFull: "images/x5.jpg",
     details: ["5 passengers", "Luxury SUV", "Panoramic roof", "Ideal for VIP & families"],
   },
   {
     id: "toyota-hiace",
     name: "Toyota Hiace",
     meta: "12 seats · Manual/Auto · Van",
-    image: "images/hiace.jpg",
+    image: "images/fleet-thumb/hiace.jpg",
+    imageFull: "images/hiace.jpg",
     details: ["Up to 12 passengers", "Group & corporate", "Large luggage bay", "Cruise & wedding shuttles"],
   },
   {
     id: "range-rover",
     name: "Range Rover Sport",
     meta: "5 seats · Automatic · Premium",
-    image: "images/range.jpg",
+    image: "images/fleet-thumb/range.jpg",
+    imageFull: "images/range.jpg",
     details: ["5 passengers", "Luxury interior", "Wedding & VIP events", "Minimum age 25 for rental"],
   },
 ];
 
-// --- Fleet render ---
+// --- Fleet render (optimized images + viewport lazy load) ---
+let fleetImageObserver = null;
+
+function observeFleetImages(root) {
+  const images = root.querySelectorAll("img[data-src]");
+  if (!images.length) return;
+
+  if (fleetImageObserver) {
+    images.forEach((img) => fleetImageObserver.observe(img));
+    return;
+  }
+
+  fleetImageObserver = new IntersectionObserver(
+    (entries, obs) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        if (img.dataset.src) {
+          img.src = img.dataset.src;
+          img.removeAttribute("data-src");
+        }
+        obs.unobserve(img);
+      });
+    },
+    { rootMargin: "200px 0px", threshold: 0.01 }
+  );
+
+  images.forEach((img) => fleetImageObserver.observe(img));
+}
+
 function renderFleet() {
   const grid = document.getElementById("fleet-grid");
   const vehicleSelect = document.getElementById("vehicle");
   if (!grid) return;
+
+  const fragment = document.createDocumentFragment();
 
   FLEET.forEach((v) => {
     const card = document.createElement("article");
@@ -61,14 +98,25 @@ function renderFleet() {
     card.setAttribute("tabindex", "0");
     card.setAttribute("aria-label", `View details for ${v.name}`);
     card.dataset.id = v.id;
-    card.innerHTML = `
-      <img src="${v.image}" alt="${v.name}" width="600" height="375" loading="lazy">
-      <div class="fleet-card-body">
-        <h3>${v.name}</h3>
-        <p class="fleet-meta">${v.meta}</p>
-        <p class="fleet-hint">Click for details →</p>
-      </div>
+
+    const img = document.createElement("img");
+    img.alt = v.name;
+    img.width = 600;
+    img.height = 375;
+    img.decoding = "async";
+    img.loading = "lazy";
+    img.dataset.src = v.image;
+
+    const body = document.createElement("div");
+    body.className = "fleet-card-body";
+    body.innerHTML = `
+      <h3>${v.name}</h3>
+      <p class="fleet-meta">${v.meta}</p>
+      <p class="fleet-hint">Click for details →</p>
     `;
+
+    card.appendChild(img);
+    card.appendChild(body);
     card.addEventListener("click", () => openLightbox(v.id));
     card.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -76,7 +124,7 @@ function renderFleet() {
         openLightbox(v.id);
       }
     });
-    grid.appendChild(card);
+    fragment.appendChild(card);
 
     if (vehicleSelect) {
       const opt = document.createElement("option");
@@ -85,6 +133,9 @@ function renderFleet() {
       vehicleSelect.appendChild(opt);
     }
   });
+
+  grid.appendChild(fragment);
+  observeFleetImages(grid);
 }
 
 // --- Lightbox ---
@@ -94,7 +145,8 @@ function openLightbox(id) {
   const v = FLEET.find((f) => f.id === id);
   if (!v || !lightbox) return;
 
-  document.getElementById("lightbox-img").src = v.image;
+  const lightboxImg = document.getElementById("lightbox-img");
+  lightboxImg.src = v.imageFull || v.image;
   document.getElementById("lightbox-img").alt = v.name;
   document.getElementById("lightbox-title").textContent = v.name;
   document.getElementById("lightbox-meta").textContent = v.meta;
@@ -193,9 +245,19 @@ const navToggle = document.querySelector(".nav-toggle");
 const navMenu = document.querySelector(".nav-menu");
 const navLinks = document.querySelectorAll(".nav-menu a");
 
-window.addEventListener("scroll", () => {
-  header?.classList.toggle("scrolled", window.scrollY > 40);
-});
+let scrollTicking = false;
+window.addEventListener(
+  "scroll",
+  () => {
+    if (scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(() => {
+      header?.classList.toggle("scrolled", window.scrollY > 40);
+      scrollTicking = false;
+    });
+  },
+  { passive: true }
+);
 
 navToggle?.addEventListener("click", () => {
   const open = navMenu?.classList.toggle("open");
@@ -212,28 +274,27 @@ navLinks.forEach((link) => {
   });
 });
 
-// Active nav on scroll
-const sections = document.querySelectorAll("section[id], main > section");
-const observer = new IntersectionObserver(
+// Active nav on scroll (only updates when the active section changes)
+let activeSectionId = "";
+const navObserver = new IntersectionObserver(
   (entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      const id = entry.target.id;
-      navLinks.forEach((a) => {
-        const href = a.getAttribute("href");
-        a.classList.toggle(
-          "active",
-          href === `#${id}` ||
-            (id === "inquiry" && href === "#inquiry")
-        );
-      });
+    const visible = entries
+      .filter((e) => e.isIntersecting)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+    if (!visible.length) return;
+    const id = visible[0].target.id;
+    if (id === activeSectionId) return;
+    activeSectionId = id;
+    navLinks.forEach((a) => {
+      const href = a.getAttribute("href");
+      a.classList.toggle("active", href === `#${id}` || (id === "inquiry" && href === "#inquiry"));
     });
   },
-  { rootMargin: "-40% 0px -50% 0px", threshold: 0 }
+  { rootMargin: "-40% 0px -50% 0px", threshold: [0, 0.15, 0.35] }
 );
 
 document.querySelectorAll("#transfers, #premium, #rentals, #fleet, #about, #inquiry, #top").forEach((el) => {
-  if (el) observer.observe(el);
+  if (el) navObserver.observe(el);
 });
 
 // --- Form: service type toggles return date ---
